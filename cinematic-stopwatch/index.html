@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>100M · Timekeeper</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="stage">
+  <canvas id="bg"></canvas>
+  <canvas id="fg"></canvas>
+
+  <div id="rig" class="offstage">
+    <div id="rigInner">
+      <svg id="watchSvg" viewBox="0 0 800 800" aria-label="손에 쥔 스톱워치"></svg>
+    </div>
+  </div>
+
+  <div id="grade"></div>
+  <div id="grain"></div>
+  <div class="lb top"></div>
+  <div class="lb bottom"></div>
+  <div id="fade"></div>
+
+  <div id="lowerThird">
+    <div class="lt-live"><i></i>LIVE</div>
+    <div class="lt-main">
+      <div class="lt-title">MEN'S 100M · FINAL</div>
+      <div class="lt-sub">남자 100m 결승 · 8레인 출발 대기</div>
+    </div>
+  </div>
+  <div id="subtitle"><div class="en"></div><div class="ko"></div></div>
+  <div id="caption"></div>
+</div>
+
+<!-- 하단 글래스 UI -->
+<div id="ui" class="hidden">
+  <aside id="lapCard" class="glass">
+    <header><span>LAPS</span><span id="lapCount">0</span></header>
+    <ol id="lapList"></ol>
+    <p id="lapEmpty">측정 중 <b>랩</b>을 누르면<br>구간 기록이 여기에 쌓입니다</p>
+  </aside>
+
+  <nav id="controls" class="glass">
+    <div class="readout"><span id="roLabel">READY</span><span id="roTime">0:00.00</span></div>
+    <div class="row">
+      <button id="btnSecondary" class="gbtn" disabled>
+        <svg viewBox="0 0 24 24"><path id="icoSecondary" d="M5 21V4h11l-1.5 3.5L16 11H5"/></svg>
+        <span id="lblSecondary">랩</span>
+      </button>
+      <button id="btnPrimary" class="gbtn primary">
+        <svg viewBox="0 0 24 24"><path id="icoPrimary" d="M8 5v14l11-7z"/></svg>
+        <span id="lblPrimary">시작</span>
+      </button>
+      <button id="btnLaps" class="gbtn">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        <span>기록</span>
+      </button>
+    </div>
+    <div class="keys"><kbd>Space</kbd> 시작/정지 <kbd>L</kbd> 랩 <kbd>R</kbd> 재설정</div>
+  </nav>
+
+  <div id="topTools">
+    <button id="btnSound" class="glass ibtn" title="사운드"><svg viewBox="0 0 24 24"><path id="icoSound" d="M4 9v6h4l5 4V5L8 9zM16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg></button>
+    <button id="btnReplay" class="glass ibtn" title="인트로 다시 보기"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4.5h4.5"/></svg></button>
+  </div>
+</div>
+
+<div id="splash">
+  <div class="splash-inner">
+    <div class="eyebrow">ATHLETICS CHAMPIONSHIPS · MEN'S 100M FINAL</div>
+    <h1>TIMEKEEPER</h1>
+    <p>결승선의 0.01초를 재는 사람의 손</p>
+    <button id="enter"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>입장하기</button>
+    <small>사운드를 켜고 감상하세요 · <kbd>Esc</kbd> 인트로 건너뛰기</small>
+  </div>
+</div>
+<button id="skip" class="hidden">건너뛰기 ›</button>
+
+<script src="js/audio.js"></script>
+<script src="js/stadium.js"></script>
+<script src="js/stopwatch.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

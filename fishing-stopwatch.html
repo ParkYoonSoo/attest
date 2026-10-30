@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>방파제 낚시 스톱워치</title>
+<style>
+  :root{
+    --text:#fff;
+    --sub:rgba(255,255,255,.72);
+    --line:rgba(255,255,255,.18);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:#141a3f;color:var(--text);
+    font-family:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;user-select:none;-webkit-user-select:none}
+  #scene{position:fixed;inset:0;width:100%;height:100%;display:block}
+
+  .glass{
+    background:linear-gradient(135deg,rgba(255,255,255,.22),rgba(255,255,255,.06));
+    backdrop-filter:blur(20px) saturate(160%);
+    -webkit-backdrop-filter:blur(20px) saturate(160%);
+    border:1px solid rgba(255,255,255,.32);
+    box-shadow:0 20px 50px rgba(8,10,40,.35),inset 0 1px 0 rgba(255,255,255,.45);
+  }
+  .chip{position:fixed;top:max(16px,env(safe-area-inset-top));left:16px;padding:10px 14px;border-radius:16px;font-size:14px;font-weight:600;letter-spacing:-.01em}
+  .chip small{display:block;font-size:11px;font-weight:400;color:var(--sub);margin-top:2px}
+  @media (hover:none){.chip small{display:none}}
+
+  .panel{position:fixed;left:50%;bottom:max(16px,env(safe-area-inset-bottom));transform:translateX(-50%);
+    width:min(560px,calc(100% - 32px));padding:16px 18px 14px;border-radius:26px;display:flex;flex-direction:column;gap:12px}
+  .top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;color:var(--sub)}
+  .status{display:flex;align-items:center;gap:8px;min-width:0}
+  .status span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dot{flex:none;width:8px;height:8px;border-radius:50%;background:#a5acd0;box-shadow:0 0 0 3px rgba(255,255,255,.12)}
+  .dot.on{background:#4ade80;animation:pulse 1.4s ease-in-out infinite}
+  .dot.hit{background:#fbbf24}
+  @keyframes pulse{50%{box-shadow:0 0 0 6px rgba(74,222,128,.15)}}
+  .count{flex:none;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);color:#fff;font-weight:600}
+
+  .time{font-size:clamp(46px,13vw,74px);font-weight:250;text-align:center;font-variant-numeric:tabular-nums;
+    letter-spacing:-.02em;line-height:1;text-shadow:0 2px 24px rgba(0,0,0,.25)}
+  .time .cs{opacity:.7;font-size:.6em}
+  .sub{text-align:center;font-size:13px;color:var(--sub);font-variant-numeric:tabular-nums;margin-top:-4px}
+
+  .btns{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  button{height:52px;border-radius:16px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);
+    color:#fff;font:inherit;font-size:16px;font-weight:600;cursor:pointer;
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.35);transition:transform .12s,background .2s,opacity .2s}
+  button:hover:not(:disabled){background:rgba(255,255,255,.2)}
+  button:active:not(:disabled){transform:scale(.97)}
+  button:disabled{opacity:.4;cursor:default}
+  button:focus-visible{outline:2px solid rgba(255,255,255,.8);outline-offset:2px}
+  button.go{background:linear-gradient(180deg,rgba(74,222,128,.55),rgba(22,150,85,.45));border-color:rgba(170,255,210,.6)}
+  button.go:hover{background:linear-gradient(180deg,rgba(74,222,128,.65),rgba(22,150,85,.55))}
+  button.stop{background:linear-gradient(180deg,rgba(248,113,113,.55),rgba(190,50,60,.45));border-color:rgba(255,190,190,.6)}
+  button.stop:hover{background:linear-gradient(180deg,rgba(248,113,113,.65),rgba(190,50,60,.55))}
+
+  .laps{height:112px;overflow:auto;border-top:1px solid var(--line);font-size:13px;font-variant-numeric:tabular-nums;scrollbar-width:thin}
+  .laps .head,.laps li{display:grid;grid-template-columns:32px 1fr 74px 74px;align-items:center;padding:6px 4px}
+  .laps .head{position:sticky;top:0;font-size:11px;color:var(--sub);background:rgba(40,40,90,.15);backdrop-filter:blur(8px)}
+  .laps ul{list-style:none}
+  .laps li{border-bottom:1px solid rgba(255,255,255,.08);animation:in .35s ease-out}
+  @keyframes in{from{opacity:0;transform:translateY(-6px)}}
+  .laps .n{color:var(--sub)}
+  .laps .sp{display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap;overflow:hidden}
+  .laps .sp i{flex:none;width:9px;height:9px;border-radius:50%;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+  .laps .lp,.laps .tt{text-align:right}
+  .laps .tt{color:var(--sub)}
+  .laps li.best .lp{color:#86efac}
+  .laps li.worst .lp{color:#fda4af}
+  .laps li .tag{font-size:10px;padding:1px 5px;border-radius:6px;background:rgba(255,255,255,.14);margin-left:2px}
+  .empty{padding:26px 0;text-align:center;color:var(--sub);font-size:13px}
+  @media (max-width:420px){
+    .panel{padding:14px 14px 12px;gap:10px}
+    .laps .head,.laps li{grid-template-columns:28px 1fr 68px 68px}
+    button{height:48px}
+  }
+</style>
+</head>
+<body>
+
+<svg id="scene" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" aria-label="방파제에서 낚시하는 낚시꾼">
+  <defs>
+    <linearGradient id="sky" gradientUnits="userSpaceOnUse" x1="0" y1="-420" x2="0" y2="300">
+      <stop offset="0" stop-color="#0f1540"/>
+      <stop offset=".42" stop-color="#34397f"/>
+      <stop offset=".7" stop-color="#a65c99"/>
+      <stop offset=".88" stop-color="#f08f7f"/>
+      <stop offset="1" stop-color="#ffc48c"/>
+    </linearGradient>
+    <linearGradient id="sea" gradientUnits="userSpaceOnUse" x1="0" y1="300" x2="0" y2="900">
+      <stop offset="0" stop-color="#ee9a88"/>
+      <stop offset=".07" stop-color="#a86b98"/>
+      <stop offset=".32" stop-color="#43478a"/>
+      <stop offset="1" stop-color="#121840"/>
+    </linearGradient>
+    <radialGradient id="sunGlow">
+      <stop offset="0" stop-color="#ffe7b0" stop-opacity=".9"/>
+      <stop offset=".35" stop-color="#ffb38a" stop-opacity=".35"/>
+      <stop offset="1" stop-color="#ff9a8a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="lampGlow">
+      <stop offset="0" stop-color="#fff3c0" stop-opacity="1"/>
+      <stop offset="1" stop-color="#ffd27a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="pierFace" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8a83a0"/>
+      <stop offset="1" stop-color="#4f4968"/>
+    </linearGradient>
+    <linearGradient id="pierRef" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0a0820" stop-opacity=".35"/>
+      <stop offset="1" stop-color="#0a0820" stop-opacity="0"/>
+    </linearGradient>
+    <pattern id="blocks" width="72" height="80" patternUnits="userSpaceOnUse" x="8" y="360">
+      <line x1="0" y1="0" x2="0" y2="80" stroke="rgba(20,15,40,.22)" stroke-width="2"/>
+      <line x1="0" y1="40" x2="72" y2="40" stroke="rgba(20,15,40,.12)" stroke-width="1.5"/>
+    </pattern>
+  </defs>
+
+  <!-- sky -->
+  <rect x="-3000" y="-3000" width="7000" height="3302" fill="url(#sky)"/>
+  <g id="stars"></g>
+  <circle cx="790" cy="292" r="150" fill="url(#sunGlow)"/>
+  <circle cx="790" cy="292" r="34" fill="#ffe2aa"/>
+  <g id="clouds"></g>
+  <path d="M500 301 Q540 283 585 291 Q630 278 690 301 Z" fill="#3b3472" opacity=".75"/>
+  <path d="M880 301 Q930 290 980 294 Q1040 282 1120 301 Z" fill="#3b3472" opacity=".6"/>
+  <path d="M190 301 Q230 293 270 297 Q300 290 330 301 Z" fill="#3b3472" opacity=".5"/>
+
+  <!-- sea -->
+  <rect x="-3000" y="300" width="7000" height="3000" fill="url(#sea)"/>
+  <g id="sunRef"></g>
+  <g id="waves"></g>
+  <g id="ripples"></g>
+
+  <!-- lighthouse -->
+  <g id="lighthouse">
+    <circle id="lampGlow" cx="70" cy="220" r="34" fill="url(#lampGlow)" opacity=".8"/>
+    <path d="M52 352 L58 236 L82 236 L88 352 Z" fill="#df463f"/>
+    <path d="M54.7 300 L85.3 300 L86.1 316 L53.9 316 Z" fill="#f4eef0"/>
+    <path d="M56.7 262 L83.3 262 L84.1 278 L55.9 278 Z" fill="#f4eef0"/>
+    <rect x="50" y="230" width="40" height="6" rx="1.5" fill="#3a3550"/>
+    <rect x="58" y="211" width="24" height="19" fill="#ffeab0"/>
+    <line x1="70" y1="211" x2="70" y2="230" stroke="#3a3550" stroke-width="2"/>
+    <path d="M54 211 L70 196 L86 211 Z" fill="#3a3550"/>
+    <rect x="66" y="330" width="8" height="14" rx="3" fill="#5b2a2a"/>
+  </g>
+
+  <!-- breakwater -->
+  <rect x="-3000" y="440" width="3440" height="60" fill="url(#pierRef)"/>
+  <rect x="-3000" y="360" width="3440" height="80" fill="url(#pierFace)"/>
+  <rect x="-3000" y="360" width="3440" height="80" fill="url(#blocks)"/>
+  <rect x="-3000" y="351" width="3440" height="10" fill="#cbc4d8"/>
+  <rect x="-3000" y="359" width="3440" height="2" fill="#6d6688"/>
+  <path id="foam" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="2" stroke-dasharray="14 10"/>
+  <g id="tetrapods"></g>
+
+  <!-- bucket -->
+  <g id="bucket">
+    <g id="tails"></g>
+    <path d="M322 332 L348 332 L345 352 L325 352 Z" fill="#2f7fd6"/>
+    <path d="M325 340 L345 340" stroke="rgba(255,255,255,.25)" stroke-width="2"/>
+    <rect x="320" y="330" width="30" height="4" rx="2" fill="#5aa0ea"/>
+    <path d="M323 332 Q335 316 347 332" fill="none" stroke="#9aa6b8" stroke-width="1.5"/>
+  </g>
+
+  <!-- fisherman -->
+  <g id="fisher">
+    <path id="armB" fill="none" stroke="#c95e1a" stroke-width="7" stroke-linecap="round"/>
+    <circle id="handB" r="4" fill="#efbf98"/>
+    <rect x="365" y="345" width="13" height="8" rx="2.5" fill="#26263a"/>
+    <rect x="387" y="345" width="14" height="8" rx="2.5" fill="#26263a"/>
+    <path d="M372 347 L377 316 M393 347 L388 316" stroke="#34405e" stroke-width="9" stroke-linecap="round"/>
+    <path d="M371 320 Q369 300 375 282 L397 282 Q402 300 398 320 Z" fill="#ee7d2a" stroke="#ee7d2a" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M379 284 L377 318 M393 284 L395 318" stroke="#ffd166" stroke-width="2" opacity=".85"/>
+    <rect x="370" y="314" width="30" height="5" rx="2" fill="#2b3550"/>
+    <circle cx="387" cy="268" r="11.5" fill="#f1c39d"/>
+    <circle cx="393" cy="268" r="1.4" fill="#2a2030"/>
+    <path d="M394 274 Q396 275 397 273" fill="none" stroke="#b07a5a" stroke-width="1"/>
+    <path d="M376 262 Q377 247 387 246 Q397 247 398 262 Z" fill="#3d6b5f"/>
+    <ellipse cx="387" cy="262" rx="17" ry="3.8" fill="#2f5249"/>
+  </g>
+  <path id="rodHandle" fill="none" stroke="#7a5233" stroke-width="5" stroke-linecap="round"/>
+  <path id="rod" fill="none" stroke="#1c1c28" stroke-width="2.6" stroke-linecap="round"/>
+  <circle id="reel" r="5.5" fill="#c9ccd6" stroke="#4b4f60" stroke-width="1.5"/>
+  <line id="reelHandle" stroke="#2c2f3d" stroke-width="2" stroke-linecap="round"/>
+  <path id="armF" fill="none" stroke="#ee7d2a" stroke-width="7" stroke-linecap="round"/>
+  <circle id="handF" r="4.2" fill="#f1c39d"/>
+
+  <!-- tackle -->
+  <path id="line" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="1"/>
+  <line id="leader" stroke="rgba(255,255,255,.75)" stroke-width=".9"/>
+  <g id="bobber">
+    <line x1="0" y1="-14" x2="0" y2="-6" stroke="#ffd23f" stroke-width="1.6" stroke-linecap="round"/>
+    <ellipse cx="0" cy="0" rx="5" ry="7" fill="#fff"/>
+    <path d="M-5 0 A5 7 0 0 1 5 0 Z" fill="#e9423a"/>
+  </g>
+  <g id="fish" style="display:none">
+    <path id="fTail" d="M-33 0 L-46 -10 L-42 0 L-46 10 Z"/>
+    <ellipse id="fBody" cx="-18" cy="0" rx="18" ry="7.5"/>
+    <ellipse id="fBelly" cx="-17" cy="3" rx="13" ry="3.2" opacity=".75"/>
+    <path id="fFin" d="M-24 -6 Q-17 -15 -10 -6 Z"/>
+    <circle cx="-5" cy="-2" r="1.7" fill="#111"/>
+  </g>
+  <g id="splash"></g>
+  <g id="popups"></g>
+  <g id="gulls"></g>
+</svg>
+
+<div class="chip glass">방파제 낚시 스톱워치<small>Space 시작/중지 · L 랩 · R 리셋</small></div>
+
+<section class="panel glass" aria-label="스톱워치">
+  <div class="top">
+    <div class="status"><i class="dot" id="dot"></i><span id="status">준비 완료 · 시작을 누르면 캐스팅해요</span></div>
+    <div class="count" id="count">조과 0마리</div>
+  </div>
+  <div class="time" id="time" aria-live="off"><span id="tMain">00:00</span><span class="cs" id="tCs">.00</span></div>
+  <div class="sub" id="lapNow">현재 랩 00:00.00</div>
+  <div class="btns">
+    <button id="btnL" disabled>리셋</button>
+    <button id="btnR" class="go">시작</button>
+  </div>
+  <div class="laps" id="laps">
+    <div class="head"><span>#</span><span>조과</span><span style="text-align:right">랩</span><span style="text-align:right">전체</span></div>
+    <ul id="lapList"></ul>
+    <div class="empty" id="empty">랩을 누르면 물고기를 낚아요</div>
+  </div>
+</section>
+
+<script>
+(() => {
+const NS = 'http://www.w3.org/2000/svg', D = Math.PI / 180;
+const $ = s => document.querySelector(s);
+const mk = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const eio = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+const eout = t => 1 - Math.pow(1 - t, 3);
+const rand = (a, b) => a + Math.random() * (b - a);
+const dir = a => ({ x: Math.cos(a * D), y: Math.sin(a * D) });
+const approach = (c, t, k) => c + (t - c) * Math.min(1, k);
+
+/* ---------- species ---------- */
+const SPECIES = [
+  { name: '우럭',   color: '#6b6470', belly: '#c3bac4', min: 20, max: 42 },
+  { name: '감성돔', color: '#8796ad', belly: '#e3e9f0', min: 25, max: 50 },
+  { name: '고등어', color: '#2f7f8f', belly: '#e8f1f2', min: 22, max: 38 },
+  { name: '볼락',   color: '#a46a4c', belly: '#ebc8ab', min: 15, max: 28 },
+  { name: '전갱이', color: '#9fb3c2', belly: '#f2f6f8', min: 18, max: 32 },
+  { name: '노래미', color: '#8d7140', belly: '#dccb9f', min: 20, max: 38 },
+  { name: '참돔',   color: '#e06b78', belly: '#f8d6d9', min: 28, max: 60 },
+];
+
+/* ---------- static scenery ---------- */
+const svg = $('#scene');
+// stars
+const starsG = $('#stars'), stars = [];
+for (let i = 0; i < 70; i++) {
+  const y = rand(-900, 120);
+  stars.push({ e: mk('circle', { cx: rand(-600, 1600), cy: y, r: rand(.6, 1.6), fill: '#fff' }, starsG), base: clamp((120 - y) / 500) * .9, ph: rand(0, 6) });
+}
+// clouds
+const cloudsG = $('#clouds'), clouds = [];
+[[120, 70, 1.1, 8], [520, 140, .8, 12], [900, 60, 1.3, 6], [1300, 170, .7, 10], [-200, 200, .9, 9]].forEach(([x, y, s, v]) => {
+  const g = mk('g', { opacity: .55 }, cloudsG);
+  [[0, 0, 46, 13], [-30, 6, 30, 9], [34, 5, 34, 10], [6, -9, 26, 11]].forEach(([cx, cy, rx, ry]) =>
+    mk('ellipse', { cx: cx * s, cy: cy * s, rx: rx * s, ry: ry * s, fill: y < 120 ? '#c98bb3' : '#ffc6b0' }, g));
+  clouds.push({ g, x, y, v });
+});
+// sun reflection
+const sunRef = [];
+for (let j = 0; j < 9; j++) sunRef.push(mk('ellipse', { cx: 790, cy: 305 + j * 8 + j * j * .6, rx: 30, ry: 1.4 + j * .12, fill: '#ffe0a8', opacity: .7 - j * .06 }, $('#sunRef')));
+// waves
+const wavesG = $('#waves'), waves = [];
+for (let i = 0; i < 20; i++) {
+  const y = 306 + i * i * 2.2 + i * 6, amp = .6 + i * .35, k = .02 - i * .0005;
+  let d = `M-1500 ${y}`;
+  for (let x = -1500; x <= 2500; x += 30) d += ` L${x} ${(y + Math.sin(x * k + i) * amp).toFixed(1)}`;
+  const e = mk('path', { d, fill: 'none', stroke: '#fff', 'stroke-opacity': Math.min(.38, .1 + i * .018), 'stroke-width': .8 + i * .1,
+    'stroke-dasharray': `${16 + i * 6} ${50 + i * 14}`, 'stroke-linecap': 'round' }, wavesG);
+  waves.push({ e, spd: 8 + i * 2.2, ph: rand(0, 100), i });
+}
+// foam along breakwater
+{ let d = 'M-3000 441'; for (let x = -3000; x <= 440; x += 12) d += ` L${x} ${441 + Math.sin(x * .2) * 1.5}`; $('#foam').setAttribute('d', d); }
+// tetrapods
+const tg = $('#tetrapods');
+[[452, 404, 10], [494, 416, -20], [530, 410, 35], [440, 438, 60], [478, 446, -5], [516, 440, 20], [552, 432, -30]].forEach(([x, y, r]) => {
+  const g = mk('g', { transform: `translate(${x} ${y}) rotate(${r})` }, tg);
+  [[0, -17], [15, 9], [-15, 9], [3, 5]].forEach(([lx, ly], i) => {
+    mk('line', { x1: 0, y1: 0, x2: lx, y2: ly, stroke: i === 3 ? '#77728c' : '#9b96ae', 'stroke-width': 11, 'stroke-linecap': 'round' }, g);
+  });
+  [[0, -17], [15, 9], [-15, 9]].forEach(([lx, ly]) => mk('line', { x1: -1, y1: -2, x2: lx - 1, y2: ly - 2, stroke: '#c4bfd3', 'stroke-width': 3, 'stroke-linecap': 'round', opacity: .7 }, g));
+});
+// gulls
+const gullsG = $('#gulls'), gulls = [];
+[[100, 120, 26, 1], [600, 80, 34, .8], [-300, 170, 22, 1.1]].forEach(([x, y, v, s]) => {
+  const g = mk('g', {}, gullsG);
+  const p = mk('path', { d: 'M-10 0 Q-5 -6 0 0 Q5 -6 10 0', fill: 'none', stroke: '#2b2846', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g);
+  gulls.push({ g, p, x, y, v, s, ph: rand(0, 6) });
+});
+
+/* ---------- dynamic fx ---------- */
+const ripplesG = $('#ripples'), splashG = $('#splash'), popG = $('#popups');
+const ripples = [], parts = [], pops = [];
+function ripple(x, y, max = 24, dur = 1.2) { ripples.push({ e: mk('ellipse', { cx: x, cy: y, fill: 'none', stroke: '#fff', 'stroke-width': 1.2 }, ripplesG), x, y, max, dur, age: 0 }); }
+function splash(x, y, n, pow) {
+  for (let i = 0; i < n; i++) {
+    const a = (-90 + rand(-55, 55)) * D, sp = pow * rand(.45, 1);
+    parts.push({ e: mk('circle', { r: rand(1, 2.4), fill: '#fff', opacity: .9 }, splashG), x, y, y0: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp });
+  }
+}
+function popup(text) {
+  const e = mk('text', { x: 335, y: 318, 'text-anchor': 'middle', 'font-size': 13, 'font-weight': 700, fill: '#fff', stroke: 'rgba(30,20,60,.55)', 'stroke-width': 3, 'paint-order': 'stroke' }, popG);
+  e.textContent = text;
+  pops.push({ e, age: -pops.length * .25 });
+}
+
+/* ---------- rig ---------- */
+const SF = { x: 391, y: 288 }, SB = { x: 380, y: 288 }, ROD = 210, BUCKET = { x: 335, y: 326 };
+const E = id => document.getElementById(id);
+const rodEl = E('rod'), rodHandle = E('rodHandle'), reelEl = E('reel'), reelH = E('reelHandle'),
+  armF = E('armF'), armB = E('armB'), handF = E('handF'), handB = E('handB'),
+  lineEl = E('line'), leader = E('leader'), bobEl = E('bobber'), fishEl = E('fish'), tailsG = E('tails');
+
+const A = { mode: 'idle', t: 0, rod: -72, bend: 0, sag: 0, reel: 0, tilt: 0, bob: { x: 0, y: 0, px: 0, py: 0 }, hang: true, ropeL: 46,
+  inWater: false, target: null, queue: [], fish: null, bucket: [], rippleT: 0, biteT: 0, released: false };
+
+function geom() {
+  const a = A.rod, d = dir(a), ha = (a * .55 + 25) * D;
+  const H = { x: SF.x + 30 * Math.cos(ha), y: SF.y + 30 * Math.sin(ha) };
+  const td = dir(a + A.bend);
+  return { a, d, H,
+    tip: { x: H.x + ROD * td.x, y: H.y + ROD * td.y },
+    ctrl: { x: H.x + ROD * .55 * d.x, y: H.y + ROD * .55 * d.y },
+    butt: { x: H.x - 30 * d.x, y: H.y - 30 * d.y } };
+}
+{ const G = geom(); A.bob.x = A.bob.px = G.tip.x; A.bob.y = A.bob.py = G.tip.y + 46; }
+
+function hangStep(dt, G) {
+  const b = A.bob, tip = G.tip;
+  if (!A.hang) { A.hang = true; b.px = b.x; b.py = b.y; A.ropeL = Math.max(46, Math.hypot(b.x - tip.x, b.y - tip.y)); }
+  A.ropeL = Math.max(46, A.ropeL - 320 * dt);
+  const vx = (b.x - b.px) * .985, vy = (b.y - b.py) * .985;
+  b.px = b.x; b.py = b.y; b.x += vx; b.y += vy + 900 * dt * dt;
+  const dx = b.x - tip.x, dy = b.y - tip.y, d = Math.hypot(dx, dy) || 1;
+  if (d > A.ropeL) { b.x = tip.x + dx / d * A.ropeL; b.y = tip.y + dy / d * A.ropeL; }
+  A.tilt = -Math.atan2(b.x - tip.x, b.y - tip.y) / D;
+}
+
+function setMode(m) {
+  A.mode = m; A.t = 0; A.rod0 = A.rod; A.b0 = { x: A.bob.x, y: A.bob.y }; A.rippleT = 0;
+  if (m === 'cast') { A.released = false; setStatus('캐스팅!', 'on'); }
+  if (m === 'wait') setStatus('입질을 기다리는 중…', 'on');
+  if (m === 'reel') setStatus('릴을 감아 채비를 회수하는 중…', '');
+  if (m === 'done') setStatus(`낚시 종료 · 오늘의 조과 ${A.bucket.length}마리`, '');
+  if (m === 'idle') setStatus('준비 완료 · 시작을 누르면 캐스팅해요', '');
+}
+
+function styleFish(rec) {
+  E('fBody').setAttribute('fill', rec.sp.color);
+  E('fTail').setAttribute('fill', rec.sp.color);
+  E('fFin').setAttribute('fill', rec.sp.color);
+  E('fBelly').setAttribute('fill', rec.sp.belly);
+}
+function startCatch() {
+  const rec = A.queue.shift();
+  A.fish = { rec, out: false, done: false, x: 0, y: 0, rot: -90, s: .75 + clamp((rec.cm - 15) / 45) * .7 };
+  styleFish(rec); A.biteT = 0;
+  setMode('catch'); setStatus('입질! 찌가 들어간다…', 'hit');
+}
+function addToBucket(rec) {
+  A.bucket.push(rec); renderTails(); popup(`+1 ${rec.sp.name} ${rec.cm}cm`);
+  E('count').textContent = `조과 ${A.bucket.length}마리`;
+}
+function renderTails() {
+  tailsG.innerHTML = '';
+  const list = A.bucket.slice(-5);
+  list.forEach((r, i) => mk('path', { d: 'M0 0 L-5 -10 L0 -6.5 L5 -10 Z', fill: r.sp.color, stroke: 'rgba(0,0,0,.2)', 'stroke-width': .6,
+    transform: `translate(${327 + i * 4} 334) rotate(${-20 + i * 10})` }, tailsG));
+}
+
+function update(dt) {
+  A.t += dt; const t = A.t; let G;
+  switch (A.mode) {
+    case 'idle': case 'done': {
+      const base = A.mode === 'idle' ? -72 : -80;
+      A.rod = approach(A.rod, base + Math.sin(T * .9) * 1.8, dt * 3);
+      A.bend = approach(A.bend, 0, dt * 6); A.sag = approach(A.sag, 0, dt * 6);
+      G = geom(); hangStep(dt, G); break;
+    }
+    case 'cast': {
+      const p = clamp(t / 1.25);
+      if (p < .32) A.rod = lerp(A.rod0, -128, eio(p / .32));
+      else if (p < .46) A.rod = lerp(-128, -20, eout((p - .32) / .14));
+      else A.rod = lerp(-20, -30, eio(clamp((p - .46) / .4)));
+      A.bend = (p > .32 && p < .5) ? -7 * Math.sin((p - .32) / .18 * Math.PI) : approach(A.bend, 0, dt * 8);
+      G = geom();
+      if (!A.released && p >= .42) {
+        A.released = true; A.hang = false; A.rel = { x: A.bob.x, y: A.bob.y };
+        A.target = { x: rand(670, 780), y: rand(398, 414) };
+      }
+      if (A.released) {
+        const e = clamp((p - .42) / .58), ee = e * (1.6 - .6 * e);
+        A.bob.x = lerp(A.rel.x, A.target.x, ee);
+        A.bob.y = lerp(A.rel.y, A.target.y - 3, ee) - 120 * 4 * ee * (1 - ee);
+        A.tilt = Math.sin(e * 9) * 25; A.sag = approach(A.sag, 6, dt * 6);
+        if (p >= 1) {
+          A.bob.x = A.target.x; A.bob.y = A.target.y - 3; A.inWater = true;
+          splash(A.target.x, A.target.y, 10, 140); ripple(A.target.x, A.target.y, 40, 1.4); ripple(A.target.x, A.target.y, 22, 1);
+          setMode('wait');
+        }
+      } else hangStep(dt, G);
+      break;
+    }
+    case 'wait': {
+      A.rod = approach(A.rod, -30 + Math.sin(t * 1.2) * 1.5, dt * 4);
+      A.bend = approach(A.bend, 0, dt * 5); A.sag = approach(A.sag, 22, dt * 2);
+      G = geom();
+      A.bob.x = A.target.x + Math.sin(t * .7) * 1.5; A.bob.y = A.target.y - 3 + Math.sin(t * 2.4) * 1.6; A.tilt = Math.sin(t * 1.7) * 6;
+      A.rippleT -= dt; if (A.rippleT <= 0) { ripple(A.bob.x, A.target.y, 22, 1.6); A.rippleT = 1.7; }
+      if (A.queue.length && t > .5) startCatch();
+      break;
+    }
+    case 'catch': {
+      const p = clamp(t / 2.6), f = A.fish;
+      if (p < .22) { A.rod = lerp(A.rod0, -17, eio(p / .22)) + Math.sin(t * 45) * 1.6; A.bend = 7 + Math.sin(t * 38) * 3; }
+      else if (p < .45) { const q = (p - .22) / .23; A.rod = lerp(-17, -98, eout(q)); A.bend = lerp(10, 4, q); A.reel += dt * 30; }
+      else if (p < .6) { A.rod = approach(A.rod, -98 + Math.sin(t * 20) * 2, dt * 8); A.bend = approach(A.bend, 3, dt * 5); A.reel += dt * 20; }
+      else if (p < .86) { A.rod = lerp(-98, -112, eio((p - .6) / .26)); A.bend = approach(A.bend, 2, dt * 5); }
+      else { A.rod = approach(A.rod, -85, dt * 4); A.bend = approach(A.bend, 0, dt * 6); }
+      A.sag = approach(A.sag, 0, dt * 10);
+      G = geom();
+      if (p < .28) {
+        const q = p / .28;
+        A.bob.x = A.target.x + Math.sin(t * 23) * 1.5;
+        A.bob.y = A.target.y - 3 + eio(clamp(q * 1.4)) * 7 + (Math.sin(t * 31) > 0 ? 2 : -1);
+        A.tilt = Math.sin(t * 27) * 18;
+        A.biteT -= dt; if (A.biteT <= 0) { splash(A.bob.x, A.target.y, 4, 70); ripple(A.bob.x, A.target.y, 18, .8); A.biteT = .14; }
+      } else if (p < .86) {
+        if (!f.out) {
+          f.out = true; A.inWater = false; fishEl.style.display = '';
+          splash(A.target.x, A.target.y, 18, 200); ripple(A.target.x, A.target.y, 50, 1.4);
+          setStatus(`히트! ${f.rec.sp.name} ${f.rec.cm}cm`, 'hit');
+        }
+        const hang = { x: G.tip.x, y: G.tip.y + 78 }; let m;
+        if (p < .6) { const q = eout((p - .28) / .32); m = { x: lerp(A.target.x, hang.x, q), y: lerp(A.target.y + 6, hang.y, q) - 70 * 4 * q * (1 - q) }; f.rot = -90 + Math.sin(T * 24) * 32; }
+        else { const q = eio((p - .6) / .26); m = { x: lerp(hang.x, BUCKET.x, q), y: lerp(hang.y, BUCKET.y, q) - 40 * 4 * q * (1 - q) }; f.rot = -90 + Math.sin(T * 18) * 18; }
+        f.x = m.x; f.y = m.y; A.bob.x = m.x; A.bob.y = m.y - 22; A.tilt = 0;
+      } else {
+        if (!f.done) { f.done = true; fishEl.style.display = 'none'; addToBucket(f.rec); setStatus('다시 캐스팅 준비!', 'on'); }
+        hangStep(dt, G);
+      }
+      if (p >= 1) { A.fish = null; setMode('cast'); }
+      break;
+    }
+    case 'reel': {
+      const p = clamp(t / 1.8);
+      A.rod = p < .65 ? lerp(A.rod0, -58, eio(p / .65)) : lerp(-58, -80, eio((p - .65) / .35));
+      A.bend = approach(A.bend, (p < .6 && A.reelWater) ? 4 : 0, dt * 5); A.sag = approach(A.sag, 3, dt * 5);
+      if (p < .85) A.reel += dt * 28;
+      G = geom();
+      const hp = { x: G.tip.x, y: G.tip.y + 46 };
+      if (A.hang) hangStep(dt, G);
+      else if (A.reelWater) {
+        if (p < .62) {
+          const e = eio(p / .62);
+          A.bob.x = lerp(A.b0.x, 560, e); A.bob.y = A.target.y - 3 + Math.sin(t * 14) * .8; A.tilt = -14;
+          A.rippleT -= dt; if (A.rippleT <= 0) { ripple(A.bob.x, A.target.y, 12, .9); A.rippleT = .1; }
+        } else {
+          if (A.inWater) { A.inWater = false; splash(A.bob.x, A.target.y, 6, 90); A.lift0 = { x: A.bob.x, y: A.bob.y }; }
+          const e = eio(clamp((p - .62) / .28));
+          A.bob.x = lerp(A.lift0.x, hp.x, e); A.bob.y = lerp(A.lift0.y, hp.y, e) - 40 * 4 * e * (1 - e); A.tilt = lerp(-14, 0, e);
+          if (e >= 1) hangStep(dt, G);
+        }
+      } else {
+        const e = eio(clamp(p / .45));
+        A.bob.x = lerp(A.b0.x, hp.x, e); A.bob.y = lerp(A.b0.y, hp.y, e);
+        if (e >= 1) hangStep(dt, G);
+      }
+      if (p >= 1) setMode('done');
+      break;
+    }
+  }
+  drawRig(G || geom());
+}
+
+const P = p => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
+function drawRig(G) {
+  const { H, d, tip, ctrl, butt } = G;
+  rodHandle.setAttribute('d', `M${P(butt)} L${P({ x: H.x + 10 * d.x, y: H.y + 10 * d.y })}`);
+  rodEl.setAttribute('d', `M${P(H)} Q${P(ctrl)} ${P(tip)}`);
+  const pp = dir(G.a + 90), R = { x: H.x - 5 * d.x + 7 * pp.x, y: H.y - 5 * d.y + 7 * pp.y };
+  reelEl.setAttribute('cx', R.x); reelEl.setAttribute('cy', R.y);
+  const rh = dir(A.reel * 57);
+  reelH.setAttribute('x1', R.x); reelH.setAttribute('y1', R.y);
+  reelH.setAttribute('x2', R.x + rh.x * 7); reelH.setAttribute('y2', R.y + rh.y * 7);
+  const HB = { x: H.x - 24 * d.x, y: H.y - 24 * d.y };
+  armF.setAttribute('d', `M${P(SF)} Q${P({ x: (SF.x + H.x) / 2 + 2, y: (SF.y + H.y) / 2 + 9 })} ${P(H)}`);
+  armB.setAttribute('d', `M${P(SB)} Q${P({ x: (SB.x + HB.x) / 2 - 2, y: (SB.y + HB.y) / 2 + 8 })} ${P(HB)}`);
+  handF.setAttribute('cx', H.x); handF.setAttribute('cy', H.y);
+  handB.setAttribute('cx', HB.x); handB.setAttribute('cy', HB.y);
+  const b = A.bob, top = { x: b.x, y: b.y - 13 };
+  const mid = { x: (tip.x + top.x) / 2, y: (tip.y + top.y) / 2 + A.sag };
+  lineEl.setAttribute('d', `M${P(tip)} Q${P(mid)} ${P(top)}`);
+  bobEl.setAttribute('transform', `translate(${b.x.toFixed(1)} ${b.y.toFixed(1)}) rotate(${A.tilt.toFixed(1)})`);
+  const f = A.fish;
+  if (f && f.out && !f.done) {
+    fishEl.setAttribute('transform', `translate(${f.x.toFixed(1)} ${f.y.toFixed(1)}) rotate(${f.rot.toFixed(1)}) scale(${f.s.toFixed(2)})`);
+    leader.setAttribute('x1', b.x); leader.setAttribute('y1', b.y + 7); leader.setAttribute('x2', f.x); leader.setAttribute('y2', f.y);
+    leader.style.display = '';
+  } else leader.style.display = 'none';
+}
+
+/* ---------- ambient scene ---------- */
+function renderScene(dt) {
+  stars.forEach(s => s.e.setAttribute('opacity', (s.base * (.6 + .4 * Math.sin(T * 1.5 + s.ph))).toFixed(2)));
+  clouds.forEach(c => { c.x += c.v * dt; if (c.x > 1900) c.x = -900; c.g.setAttribute('transform', `translate(${c.x.toFixed(1)} ${c.y})`); });
+  sunRef.forEach((e, j) => e.setAttribute('rx', ((34 - j * 2.2) * (.55 + .45 * Math.sin(T * 2.2 + j * 1.3))).toFixed(1)));
+  waves.forEach(w => { w.e.setAttribute('stroke-dashoffset', (-(T * w.spd + w.ph)).toFixed(1)); w.e.setAttribute('transform', `translate(0 ${(Math.sin(T * .9 + w.i) * 1.2).toFixed(2)})`); });
+  $('#foam').setAttribute('stroke-dashoffset', (T * 10).toFixed(1));
+  $('#lampGlow').setAttribute('opacity', (.45 + .45 * Math.max(0, Math.sin(T * 2.2))).toFixed(2));
+  gulls.forEach(g => {
+    g.x += g.v * dt; if (g.x > 1700) g.x = -700;
+    const fl = Math.cos(T * 7 * g.s + g.ph);
+    g.g.setAttribute('transform', `translate(${g.x.toFixed(1)} ${(g.y + Math.sin(T * .8 + g.ph) * 8).toFixed(1)}) scale(${g.s} ${(g.s * (.35 + .65 * Math.abs(fl))).toFixed(2)})`);
+  });
+  for (let i = ripples.length - 1; i >= 0; i--) {
+    const r = ripples[i]; r.age += dt; const e = r.age / r.dur;
+    if (e >= 1) { r.e.remove(); ripples.splice(i, 1); continue; }
+    const rx = 4 + r.max * eout(e);
+    r.e.setAttribute('rx', rx.toFixed(1)); r.e.setAttribute('ry', (rx * .28).toFixed(1)); r.e.setAttribute('stroke-opacity', ((1 - e) * .8).toFixed(2));
+  }
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i]; p.vy += 700 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+    if (p.vy > 0 && p.y > p.y0 + 2) { p.e.remove(); parts.splice(i, 1); continue; }
+    p.e.setAttribute('cx', p.x.toFixed(1)); p.e.setAttribute('cy', p.y.toFixed(1));
+  }
+  for (let i = pops.length - 1; i >= 0; i--) {
+    const p = pops[i]; p.age += dt;
+    if (p.age >= 1.6) { p.e.remove(); pops.splice(i, 1); continue; }
+    const a = clamp(p.age / 1.6);
+    p.e.setAttribute('y', (318 - eout(a) * 34).toFixed(1));
+    p.e.setAttribute('opacity', p.age < 0 ? 0 : (a < .7 ? 1 : (1 - a) / .3).toFixed(2));
+  }
+}
+
+/* ---------- stopwatch ---------- */
+const sw = { running: false, acc: 0, start: 0, lastLap: 0, laps: [] };
+const elapsed = () => sw.acc + (sw.running ? performance.now() - sw.start : 0);
+const pad = n => String(n).padStart(2, '0');
+function parts2(ms) {
+  const cs = Math.floor(ms / 10) % 100, s = Math.floor(ms / 1000) % 60, m = Math.floor(ms / 60000) % 60, h = Math.floor(ms / 3600000);
+  return [h ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`, pad(cs)];
+}
+const fmt = ms => { const [a, b] = parts2(ms); return `${a}.${b}`; };
+
+const btnL = E('btnL'), btnR = E('btnR'), tMain = E('tMain'), tCs = E('tCs'), lapNow = E('lapNow');
+let curStatus = '';
+function setStatus(text, cls) {
+  if (text !== curStatus) { E('status').textContent = text; curStatus = text; }
+  E('dot').className = 'dot' + (cls ? ' ' + cls : '');
+}
+function syncButtons() {
+  const r = sw.running, has = elapsed() > 0;
+  btnL.textContent = r ? '랩' : '리셋'; btnL.disabled = !r && !has;
+  btnR.textContent = r ? '중지' : (has ? '다시 시작' : '시작');
+  btnR.className = r ? 'stop' : 'go';
+}
+function start() {
+  if (sw.running) return;
+  sw.running = true; sw.start = performance.now();
+  setMode('cast'); syncButtons();
+}
+function stop() {
+  if (!sw.running) return;
+  sw.acc = elapsed(); sw.running = false;
+  if (A.fish) { if (!A.fish.done) addToBucket(A.fish.rec); A.fish = null; fishEl.style.display = 'none'; }
+  while (A.queue.length) addToBucket(A.queue.shift());
+  A.reelWater = A.inWater;
+  setMode('reel'); syncButtons();
+}
+function lap() {
+  if (!sw.running) return;
+  const total = elapsed(), lapMs = total - sw.lastLap; sw.lastLap = total;
+  const sp = SPECIES[Math.floor(Math.random() * SPECIES.length)];
+  const rec = { n: sw.laps.length + 1, lapMs, total, sp, cm: Math.round(rand(sp.min, sp.max)) };
+  sw.laps.push(rec); A.queue.push(rec); renderLaps();
+  if (A.mode !== 'wait') setStatus(`랩 ${rec.n} 기록! 곧 입질이 와요`, 'hit');
+}
+function reset() {
+  if (sw.running) return;
+  sw.acc = 0; sw.lastLap = 0; sw.laps = [];
+  A.queue = []; A.fish = null; A.bucket = []; A.inWater = false; fishEl.style.display = 'none';
+  renderTails(); E('count').textContent = '조과 0마리';
+  setMode('idle'); renderLaps(); syncButtons();
+}
+function renderLaps() {
+  const ul = E('lapList'); ul.innerHTML = '';
+  E('empty').style.display = sw.laps.length ? 'none' : '';
+  let best = null, worst = null;
+  if (sw.laps.length >= 2) {
+    best = sw.laps.reduce((a, b) => b.lapMs < a.lapMs ? b : a);
+    worst = sw.laps.reduce((a, b) => b.lapMs > a.lapMs ? b : a);
+  }
+  [...sw.laps].reverse().forEach(r => {
+    const li = document.createElement('li');
+    if (r === best) li.className = 'best'; else if (r === worst) li.className = 'worst';
+    const tag = r === best ? '<span class="tag">최단</span>' : r === worst ? '<span class="tag">최장</span>' : '';
+    li.innerHTML = `<span class="n">${pad(r.n)}</span><span class="sp"><i style="background:${r.sp.color}"></i>${r.sp.name} ${r.cm}cm${tag}</span><span class="lp">${fmt(r.lapMs)}</span><span class="tt">${fmt(r.total)}</span>`;
+    ul.appendChild(li);
+  });
+  E('laps').scrollTop = 0;
+}
+let lastMain = '';
+function renderClock() {
+  const ms = elapsed(), [m, c] = parts2(ms);
+  if (m !== lastMain) { tMain.textContent = m; lastMain = m; }
+  tCs.textContent = '.' + c;
+  lapNow.textContent = `현재 랩 ${fmt(ms - sw.lastLap)}`;
+}
+
+btnL.addEventListener('click', () => { sw.running ? lap() : reset(); btnL.blur(); });
+btnR.addEventListener('click', () => { sw.running ? stop() : start(); btnR.blur(); });
+addEventListener('keydown', e => {
+  if (e.repeat) return;
+  const k = e.key.toLowerCase();
+  if (k === ' ' ) { e.preventDefault(); sw.running ? stop() : start(); }
+  else if (k === 'l' || k === 'enter') { e.preventDefault(); lap(); }
+  else if (k === 'r' || k === 'escape') { reset(); }
+});
+
+/* ---------- fit scene above panel ---------- */
+function fit() {
+  const W = innerWidth, H = innerHeight, top = document.querySelector('.panel').getBoundingClientRect().top;
+  const avail = Math.max(180, top - 8);
+  const F = W / avail < 1.15 ? { x: 270, y: 60, w: 545, h: 420 } : { x: 120, y: 60, w: 760, h: 420 };
+  const s = Math.min(W / F.w, avail / F.h);
+  const vbW = W / s, vbH = H / s, vbX = F.x + F.w / 2 - vbW / 2, vbY = F.y + F.h / 2 - (avail / 2) / s;
+  svg.setAttribute('viewBox', `${vbX.toFixed(1)} ${vbY.toFixed(1)} ${vbW.toFixed(1)} ${vbH.toFixed(1)}`);
+}
+addEventListener('resize', fit); fit();
+
+/* ---------- loop ---------- */
+let last = performance.now(), T = 0;
+function frame(now) {
+  const dt = Math.min(.033, Math.max(0, (now - last) / 1000)); last = now; T += dt;
+  update(dt); renderScene(dt); renderClock();
+  requestAnimationFrame(frame);
+}
+syncButtons(); renderLaps();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
