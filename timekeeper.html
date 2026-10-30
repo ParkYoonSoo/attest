@@ -39,17 +39,14 @@ body.main .lb{height:0}
 #fade{position:absolute;inset:0;background:#000;opacity:1;pointer-events:none;z-index:6}
 
 /* ---------- 손 + 스톱워치 ---------- */
-#rig{position:absolute;left:50%;top:44%;width:min(82vh,96vw);aspect-ratio:1/1;
-  transform:translate(-50%,-50%);z-index:2;
-  transition:transform 2s cubic-bezier(.2,.7,.1,1), opacity 1.4s ease, filter 2s ease;
-  filter:drop-shadow(0 40px 60px rgba(0,0,0,.55))}
-#rig.offstage{opacity:0;transform:translate(-50%,-22%) scale(1.35);filter:blur(16px)}
+/* 손이 흐려지지 않도록: 퍼센트 translate(소수점 픽셀), 상시 filter, 회전 애니메이션 제거.
+   등장 연출(blur/scale)은 offstage → 기본 상태 전환 때만 쓰고, 끝나면 transform/filter가 없는 상태로 둔다 */
+#rig{--w:min(82vh,96vw);position:absolute;left:calc(50% - var(--w) / 2);top:calc(44% - var(--w) / 2);
+  width:var(--w);height:var(--w);z-index:2;
+  transition:transform 2s cubic-bezier(.2,.7,.1,1), opacity 1.4s ease, filter 2s ease}
+#rig.offstage{opacity:0;transform:translateY(28%) scale(1.35);filter:blur(16px)}
 #rig.instant{transition:none}
-#rigInner{width:100%;height:100%;animation:sway 7s ease-in-out infinite}
-@keyframes sway{
-  0%,100%{transform:translate(0,0) rotate(0)}
-  30%{transform:translate(-3px,4px) rotate(-.5deg)}
-  65%{transform:translate(3px,-2px) rotate(.4deg)}}
+#rigInner{width:100%;height:100%}
 #watchSvg{width:100%;height:100%;overflow:visible;display:block}
 
 /* 손가락 · 버튼 프레스 */
@@ -169,7 +166,7 @@ kbd{border:1px solid rgba(255,255,255,.25);border-radius:5px;padding:1px 6px;fon
 .ibtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 @media (max-width:760px){
-  #rig{top:40%;width:min(70vh,112vw)}
+  #rig{--w:min(70vh,112vw);top:calc(40% - var(--w) / 2)}
   #lapCard{right:12px;left:12px;top:auto;bottom:205px;transform:none;width:auto;max-height:30vh}
   #lapCard.closed{transform:translateY(10px)}
   #controls{min-width:0;width:calc(100% - 24px)}
